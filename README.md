@@ -50,6 +50,8 @@ Supabase handles the email-verification session and the included database migrat
 
 The second migration now provides the election tables and server-enforced actions: positions, applications, private one-vote-per-position ballots, idempotency keys, candidate caps, state transitions, aggregate results, RLS, member suspension, and audit records. The UI reloads this data from Supabase after every verified login, so approved/rejected applications and account status persist across refreshes.
 
+Run every migration in `supabase/migrations` in filename order. In particular, `202609280003_application_state_authority.sql` makes the administrator’s **Applications open** state authoritative, so a stale optional application date cannot reject an otherwise open application.
+
 ## Admin access
 
 Every verified account receives the `student` role. There is deliberately no self-service admin selection. After a trusted user has completed email verification, promote them from the Supabase SQL Editor:
