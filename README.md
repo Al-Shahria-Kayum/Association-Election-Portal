@@ -32,7 +32,7 @@ In **Vercel → Project Settings → Environment Variables**, create these value
 - `SUPABASE_URL` — your Supabase project root, for example `https://your-project-ref.supabase.co`
 - `SUPABASE_PUBLISHABLE_KEY` — your Supabase publishable/anon key
 
-Do **not** add a service-role key to Vercel or the browser. In Supabase Auth URL Configuration, add the deployed Vercel URL to the allowed Redirect URLs list.
+Do **not** add a service-role key to Vercel or the browser. In Supabase **Authentication → URL Configuration**, set the Site URL to `https://association-election-portal.vercel.app` and add `https://association-election-portal.vercel.app/**` to the Redirect URLs list. Without those settings, a verification email can redirect to an unreachable local address instead of the deployed portal.
 
 ## Included flows
 

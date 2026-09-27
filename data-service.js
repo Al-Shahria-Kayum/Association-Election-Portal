@@ -39,8 +39,17 @@ window.ElectionStore = {
     if (error) throw error;
     return data || [];
   },
-  async createPosition(name, applicationStart, applicationEnd) {
-    const { data, error } = await this.client().rpc('create_position', { p_name: name, p_application_start: applicationStart || null, p_application_end: applicationEnd || null });
+  async createPosition(details) {
+    const { data, error } = await this.client().rpc('create_position', {
+      p_name: details.name,
+      p_description: details.description || '',
+      p_application_start: details.applicationStart || null,
+      p_application_end: details.applicationEnd || null,
+      p_voting_start: details.votingStart || null,
+      p_voting_end: details.votingEnd || null,
+      p_max_candidates: details.maxCandidates || null,
+      p_allow_self_vote: Boolean(details.allowSelfVote)
+    });
     if (error) throw error;
     return data;
   },
