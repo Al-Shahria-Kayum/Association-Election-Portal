@@ -2,6 +2,8 @@ const authGate = document.getElementById('auth-gate');
 const authConfig = window.SUPABASE_CONFIG || {};
 const authEnabled = Boolean(authConfig.url && authConfig.publishableKey && window.supabase);
 let supabaseClient = null;
+let verificationPurpose = 'verify';
+const passwordSetupIntentKey = 'csa-diu-password-setup';
 
 function isDiuEmail(email) {
   return /^[^\s@]+@diu\.edu\.bd$/i.test(email.trim());
@@ -10,8 +12,13 @@ function showAuthGate(markup) {
   authGate.innerHTML = markup;
   authGate.classList.remove('hidden');
 }
-function verificationScreen(message = '') {
-  showAuthGate(`<div class="auth-panel"><div class="auth-seal">CSA<br>DIU</div><h1>Verify your DIU email</h1><p class="lead">Use your institutional email to access the Chuadanga Student Association election portal.</p><div class="field"><label for="diu-email">DIU email address</label><input id="diu-email" type="email" autocomplete="email" placeholder="name@diu.edu.bd" /></div><button class="button button-primary" id="send-verification" onclick="sendVerification()">Send verification link</button><div class="auth-error" id="auth-error">${message}</div><div class="auth-rule"><span>✦</span><span>Only <b>@diu.edu.bd</b> addresses are eligible. We’ll send a single-use verification link to confirm that you control the inbox.</span></div><div class="auth-caption">By continuing, you agree to use one verified institutional identity for this election.</div></div>`);
+function loginScreen(message = '') {
+  showAuthGate(`<div class="auth-panel"><div class="auth-seal">CSA<br>DIU</div><h1>Sign in</h1><p class="lead">Use your DIU email and portal password.</p><div class="field"><label for="login-email">DIU email address</label><input id="login-email" type="email" autocomplete="email" placeholder="name@diu.edu.bd" /></div><div class="field"><label for="login-password">Password</label><input id="login-password" type="password" autocomplete="current-password" placeholder="Your password" /></div><button class="button button-primary" id="sign-in" onclick="directLogin()">Sign in</button><div class="auth-error" id="auth-error">${message}</div><div class="auth-rule"><span>✦</span><span>First visit, forgot your password, or have not created one? <button class="auth-back" onclick="verificationScreen('', 'password-setup')">Verify your DIU email</button> once to set a direct-login password.</span></div></div>`);
+}
+function verificationScreen(message = '', purpose = 'verify') {
+  verificationPurpose = purpose;
+  const isPasswordSetup = purpose === 'password-setup';
+  showAuthGate(`<div class="auth-panel"><div class="auth-seal">CSA<br>DIU</div><h1>${isPasswordSetup ? 'Set or reset your password' : 'Verify your DIU email'}</h1><p class="lead">${isPasswordSetup ? 'We will send a secure link to your DIU inbox. Open it to set a new portal password.' : 'Use your institutional email to access the Chuadanga Student Association election portal.'}</p><div class="field"><label for="diu-email">DIU email address</label><input id="diu-email" type="email" autocomplete="email" placeholder="name@diu.edu.bd" /></div><button class="button button-primary" id="send-verification" onclick="sendVerification()">Send secure link</button><div class="auth-error" id="auth-error">${message}</div><div class="auth-rule"><span>✦</span><span>Only <b>@diu.edu.bd</b> addresses are eligible. The email link is used only to prove ownership or reset your password.</span></div><button class="auth-back" onclick="loginScreen()">← Back to sign in</button></div>`);
 }
 function emailSentScreen(email) {
   showAuthGate(`<div class="auth-panel"><div class="auth-success">✓</div><h1>Check your DIU inbox</h1><p class="lead">We sent a verification link to <b>${email}</b>. Open it on this device to securely continue to the election portal.</p><div class="auth-rule"><span>◷</span><span>The link is single-use and expires according to your Supabase email-auth configuration. Check your spam folder if it doesn’t arrive shortly.</span></div><button class="auth-back" onclick="verificationScreen()">← Use a different email address</button></div>`);
@@ -25,13 +32,53 @@ async function sendVerification() {
   const button = document.getElementById('send-verification');
   const email = input.value.trim().toLowerCase();
   if (!isDiuEmail(email)) { errorBox.textContent = 'Enter a valid @diu.edu.bd email address.'; return; }
-  button.disabled = true; button.textContent = 'Sending verification link…'; errorBox.textContent = '';
+  sessionStorage.setItem(passwordSetupIntentKey, verificationPurpose === 'password-setup' ? 'reset' : 'new');
+  button.disabled = true; button.textContent = 'Sending secure link…'; errorBox.textContent = '';
+  const redirectUrl = new URL(`${window.location.origin}/`);
+  if (verificationPurpose === 'password-setup') redirectUrl.searchParams.set('set-password', '1');
   const { error } = await supabaseClient.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: `${window.location.origin}/` }
+    options: { emailRedirectTo: redirectUrl.toString() }
   });
-  if (error) { button.disabled = false; button.textContent = 'Send verification link'; errorBox.textContent = 'We could not send the link. Please try again shortly.'; return; }
+  if (error) { sessionStorage.removeItem(passwordSetupIntentKey); button.disabled = false; button.textContent = 'Send secure link'; errorBox.textContent = error.message || 'We could not send the link. Please try again shortly.'; return; }
   emailSentScreen(email);
+}
+async function directLogin() {
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const password = document.getElementById('login-password').value;
+  const errorBox = document.getElementById('auth-error');
+  const button = document.getElementById('sign-in');
+  if (!isDiuEmail(email)) { errorBox.textContent = 'Enter a valid @diu.edu.bd email address.'; return; }
+  if (!password) { errorBox.textContent = 'Enter your password.'; return; }
+  button.disabled = true; button.textContent = 'Signing in…'; errorBox.textContent = '';
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) { button.disabled = false; button.textContent = 'Sign in'; errorBox.textContent = 'Incorrect email or password. Use the verification link below if you need to set or reset a password.'; return; }
+  await establishVerifiedSession();
+}
+function passwordSetupScreen() {
+  showAuthGate(`<div class="auth-panel"><div class="auth-seal">CSA<br>DIU</div><h1>Create your password</h1><p class="lead">Your DIU email is verified. Choose a password for direct sign-in next time.</p><div class="field"><label for="new-password">Password</label><input id="new-password" type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters" /></div><div class="field"><label for="confirm-password">Confirm password</label><input id="confirm-password" type="password" autocomplete="new-password" placeholder="Repeat your password" /></div><button class="button button-primary" id="save-password" onclick="setDirectPassword()">Save password and continue</button><div class="auth-error" id="auth-error"></div><button class="auth-back" onclick="enterPortal()">Skip for now</button></div>`);
+}
+async function setDirectPassword() {
+  const password = document.getElementById('new-password').value;
+  const confirmation = document.getElementById('confirm-password').value;
+  const errorBox = document.getElementById('auth-error');
+  const button = document.getElementById('save-password');
+  if (password.length < 8) { errorBox.textContent = 'Use at least 8 characters.'; return; }
+  if (password !== confirmation) { errorBox.textContent = 'Passwords do not match.'; return; }
+  button.disabled = true; button.textContent = 'Saving password…'; errorBox.textContent = '';
+  const { error } = await supabaseClient.auth.updateUser({ password, data: { direct_login_enabled: true } });
+  if (error) { button.disabled = false; button.textContent = 'Save password and continue'; errorBox.textContent = error.message || 'Your password could not be saved.'; return; }
+  enterPortal();
+}
+function enterPortal() {
+  const url = new URL(window.location.href);
+  if (url.searchParams.delete('set-password')) window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+  restorePortalState();
+  authGate.classList.add('hidden');
+  render();
+  const restoredContext = savedPortalState();
+  if (restoredContext.activeModal === 'newPosition' && user.role === 'admin') newPosition();
+  if (restoredContext.activeModal === 'apply') openApply();
 }
 async function establishVerifiedSession() {
   const { data, error } = await supabaseClient.auth.getUser();
@@ -49,12 +96,10 @@ async function establishVerifiedSession() {
   document.body.classList.remove('admin', 'student');
   document.body.classList.add(user.role);
   try { await refreshRemoteData(); } catch (loadError) { verificationScreen('The election database is not ready. Run the supplied Supabase migrations, then try again.'); return; }
-  restorePortalState();
-  authGate.classList.add('hidden');
-  render();
-  const restoredContext = savedPortalState();
-  if (restoredContext.activeModal === 'newPosition' && user.role === 'admin') newPosition();
-  if (restoredContext.activeModal === 'apply') openApply();
+  const setupIntent = sessionStorage.getItem(passwordSetupIntentKey) || new URLSearchParams(window.location.search).get('set-password');
+  sessionStorage.removeItem(passwordSetupIntentKey);
+  if (setupIntent || !verifiedUser.user_metadata?.direct_login_enabled) { passwordSetupScreen(); return; }
+  enterPortal();
 }
 async function bootAuth() {
   if (!authEnabled) { configurationScreen(); return; }
@@ -62,7 +107,7 @@ async function bootAuth() {
   window.__supabaseClient = supabaseClient;
   const { data } = await supabaseClient.auth.getSession();
   if (data.session) { await establishVerifiedSession(); return; }
-  verificationScreen();
+  loginScreen();
 }
 
 const app = document.getElementById('content');
