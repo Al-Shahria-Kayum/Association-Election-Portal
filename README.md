@@ -34,6 +34,10 @@ In **Vercel → Project Settings → Environment Variables**, create these value
 
 Do **not** add a service-role key to Vercel or the browser. In Supabase **Authentication → URL Configuration**, set the Site URL to `https://association-election-portal.vercel.app` and add `https://association-election-portal.vercel.app/**` to the Redirect URLs list. Without those settings, a verification email can redirect to an unreachable local address instead of the deployed portal.
 
+## Direct sign-in after verification
+
+The first DIU email verification link creates or confirms the member account. The member then sets a portal password and can subsequently sign in directly with their DIU email and password. In Supabase **Authentication → Providers → Email**, keep the Email provider enabled. Members who forget a password can use the verification-link option on the sign-in screen to set a new one.
+
 ## Included flows
 
 - Student dashboard, position browsing, candidate profiles, vote confirmation, private vote status, and published results.
