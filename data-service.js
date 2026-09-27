@@ -4,7 +4,7 @@ window.ElectionStore = {
   client() { return window.__supabaseClient || null; },
   async load(role) {
     const client = this.client();
-    if (!client) return { positions: [], applications: [], reviewQueue: [] };
+    if (!client) return { positions: [], applications: [], reviewQueue: [], people: [], auditLogs: [] };
     const [positionsResponse, statusResponse, applicationsResponse] = await Promise.all([
       client.from('positions').select('*').order('created_at'),
       client.rpc('my_voting_status'),
@@ -21,13 +21,18 @@ window.ElectionStore = {
     }));
     let reviewQueue = [];
     let people = [];
+    let auditLogs = [];
     if (role === 'admin') {
-      const queueResponse = await client.from('candidate_applications').select('id, position_id, status, created_at, profiles(full_name, email, department, student_id), positions(name)').eq('status', 'pending').order('created_at');
+      const [queueResponse, peopleResponse, auditResponse] = await Promise.all([
+        client.from('candidate_applications').select('id, position_id, status, created_at, profiles(full_name, email, department, student_id), positions(name)').eq('status', 'pending').order('created_at'),
+        client.rpc('admin_people'),
+        client.from('audit_logs').select('id, action_type, target_type, metadata, created_at').order('created_at', { ascending: false }).limit(100)
+      ]);
       if (!queueResponse.error) reviewQueue = queueResponse.data || [];
-      const peopleResponse = await client.rpc('admin_people');
       if (!peopleResponse.error) people = peopleResponse.data || [];
+      if (!auditResponse.error) auditLogs = auditResponse.data || [];
     }
-    return { positions, applications: applicationsResponse.data || [], reviewQueue, people };
+    return { positions, applications: applicationsResponse.data || [], reviewQueue, people, auditLogs };
   },
   async candidates(positionId) {
     const { data, error } = await this.client().rpc('candidate_pool', { p_position_id: positionId });
