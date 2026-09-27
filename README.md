@@ -4,7 +4,7 @@ A responsive, interaction-ready front-end implementation of the Chuadanga Studen
 
 ## Run locally
 
-Run `node server.js`, then open `http://localhost:4173` in a modern browser. You can also serve this folder with any static web server.
+Run `node scripts/local-server.js`, then open `http://localhost:4173` in a modern browser. You can also serve this folder with any static web server.
 
 ## Supabase DIU email verification
 
@@ -20,8 +20,19 @@ For PowerShell, set the values for the current terminal before starting the serv
 ```powershell
 $env:SUPABASE_URL = 'https://your-project-ref.supabase.co'
 $env:SUPABASE_PUBLISHABLE_KEY = 'your-publishable-key'
-node server.js
+node scripts/local-server.js
 ```
+
+## Vercel deployment
+
+This project is deployed as a static site with one Vercel Function: `api/config.js`. The included `vercel.json` maps the browser request to `/config.js`; it deliberately does not run the local development listener in production.
+
+In **Vercel → Project Settings → Environment Variables**, create these values for Production (and Preview if needed):
+
+- `SUPABASE_URL` — your Supabase project root, for example `https://your-project-ref.supabase.co`
+- `SUPABASE_PUBLISHABLE_KEY` — your Supabase publishable/anon key
+
+Do **not** add a service-role key to Vercel or the browser. In Supabase Auth URL Configuration, add the deployed Vercel URL to the allowed Redirect URLs list.
 
 ## Included flows
 

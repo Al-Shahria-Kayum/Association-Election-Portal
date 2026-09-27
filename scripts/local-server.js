@@ -2,11 +2,14 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const root = __dirname;
-const types = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
+const root = path.resolve(__dirname, '..');
+const types = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8'
+};
 
-// Keep local Supabase configuration out of source control without adding a
-// runtime dependency. Existing environment variables take precedence.
+// Local-only convenience: production configuration is supplied by api/config.js.
 try {
   const environmentLines = fs.readFileSync(path.join(root, '.env'), 'utf8').split(/\r?\n/);
   for (const line of environmentLines) {
@@ -28,6 +31,7 @@ http.createServer((req, res) => {
     res.end(`window.SUPABASE_CONFIG = ${JSON.stringify(config)};`);
     return;
   }
+
   const requested = pathname === '/' ? '/index.html' : pathname;
   const file = path.resolve(root, `.${requested}`);
   if (!file.startsWith(root) || !types[path.extname(file)]) {
