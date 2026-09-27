@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b6b5a" />
+    <title>CSA DIU — Election Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <section class="auth-gate hidden" id="auth-gate" aria-live="polite"></section>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <div class="brand">
+          <div class="brand-mark"><span>CSA</span><i>DIU</i></div>
+          <div><strong>Chuadanga</strong><small>Student Association</small></div>
+        </div>
+        <nav class="nav">
+          <button class="nav-link active" data-view="dashboard"><span>⌂</span>Overview</button>
+          <button class="nav-link" data-view="elections"><span>▣</span>Election positions</button>
+          <button class="nav-link" data-view="applications"><span>◫</span>My applications</button>
+          <button class="nav-link" data-view="results"><span>◔</span>Results</button>
+          <div class="nav-label admin-only">Administration</div>
+          <button class="nav-link admin-only" data-view="manage"><span>▦</span>Manage elections</button>
+          <button class="nav-link admin-only" data-view="review"><span>✓</span>Review applications <em id="review-count"></em></button>
+          <button class="nav-link admin-only" data-view="people"><span>◉</span>People</button>
+          <button class="nav-link admin-only" data-view="audit"><span>◌</span>Audit log</button>
+        </nav>
+        <div class="sidebar-footer"><span class="secure-dot"></span> Verified DIU election system</div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <button class="mobile-menu" id="menu-toggle" aria-label="Open menu">☰</button>
+          <div class="crumb" id="crumb">Election cycle <b>2026–27</b></div>
+          <div class="top-actions">
+            <button class="help-btn" title="Help">?</button>
+            <button class="profile-chip" id="profile-menu"><span class="avatar avatar-small">SM</span><span><b id="user-name">Saiful M.</b><small id="user-role">Student</small></span><i>⌄</i></button>
+          </div>
+        </header>
+
+        <section id="content" class="content"></section>
+        <footer class="site-footer">© 2026 Chuadanga Student Association, DIU <span>·</span> Designed by <strong>Al Shahria Kayum</strong></footer>
+      </main>
+    </div>
+
+    <div class="modal-backdrop hidden" id="modal-backdrop">
+      <div class="modal" id="modal"></div>
+    </div>
+    <div class="toast-stack" id="toast-stack"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/config.js"></script>
+    <script src="data-service.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
